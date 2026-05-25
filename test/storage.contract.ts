@@ -12,8 +12,20 @@ export function runStorageContract(name: string, makeStorage: () => Promise<Stor
       expect(storage).toBeDefined();
     });
 
-    it.todo('returns null for an unknown key');
-    it.todo('round-trips a value');
+    it('returns null for an unknown key', async () => {
+      const storage = await makeStorage();
+      expect(await storage.get('unknown')).toBeNull();
+    });
+
+    it('writes and reads a value', async () => {
+      const storage = await makeStorage();
+      const value = "some value";
+      const key = "merchants";
+
+      await storage.set(key, value);
+      expect(await storage.get(key)).toBe(value)
+    });
+
     it.todo('overwrites an existing value');
     it.todo('keeps separate keys independent');
     it.todo('preserves unicode and newlines verbatim');
