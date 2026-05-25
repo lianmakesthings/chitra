@@ -50,6 +50,16 @@ All tools go through this interface. The backing implementation is swapped at st
 
 **Local filesystem** — the development/self-hosted backend. Reads and writes files in a configurable data directory (default: `./data/`). Functionally identical to KV from the tools' perspective. Useful for development, inspection, and for users who want to run the server on their own machine without a Cloudflare account.
 
+Layout is one file per storage key. The backend maps known keys to file extensions for editor friendliness; unknown keys fall through to no extension.
+
+```
+data/
+  config.yaml     # config key
+  merchants.md    # merchants key
+```
+
+One file per key — rather than a single combined blob — preserves direct editability of the markdown and YAML, makes concurrent writes to different keys non-conflicting, and matches KV's independent-key model. The extension map is hardcoded in the backend; the `Storage` interface itself stays content-agnostic and string-keyed.
+
 **Cloudflare Workers KV** — the production backend. KV is the natural persistence layer for Workers; no extra infrastructure needed. Values are strings, so the markdown and YAML files are stored as raw text under fixed keys.
 
 Adding a new backend (e.g. Durable Objects, R2, a database) means implementing two methods.
