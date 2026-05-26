@@ -1,4 +1,4 @@
-import type { Storage } from './interface.js';
+import { type Storage, assertValidKey } from './interface.js';
 import { mkdir, rename, writeFile, readFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -20,8 +20,9 @@ export class FilesystemStorage implements Storage {
   }
 
   async get(_key: string): Promise<string | null> {
-    const filePath = this.getFilePath(_key);
     try {
+      assertValidKey(_key)
+      const filePath = this.getFilePath(_key);
       return await readFile(filePath, 'utf8');
     } catch (err) {
       if (this.isENOENT(err)) return null;
@@ -30,6 +31,7 @@ export class FilesystemStorage implements Storage {
   }
 
   async set(_key: string, _value: string): Promise<void> {
+    assertValidKey(_key);
     const target = this.getFilePath(_key);
     await mkdir(dirname(target), { recursive: true });
     const tmp = `${target}.${randomBytes(6).toString('hex')}.tmp`;

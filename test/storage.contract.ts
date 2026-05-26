@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Storage } from '../src/storage/interface.js';
+import { type Storage, InvalidStorageKeyError } from '../src/storage/interface.js';
 
 /**
  * Shared contract suite for any Storage implementation.
@@ -63,7 +63,19 @@ export function runStorageContract(name: string, makeStorage: () => Promise<Stor
       expect(await storage.get('merchants')).toBe(value);
     });
 
-    it.todo('rejects keys with path traversal or invalid characters');
+    it.each([
+      ['empty', ''],
+      ['parent traversal', '..'],
+      ['slash', 'sub/key'],
+      ['absolute', '/etc/passwd'],
+      ['null byte', 'foo\0bar'],
+      ['backslash', 'foo\\bar'],
+    ])('rejects invalid key: %s', async (_label, key) => {
+      const storage = await makeStorage();
+      await expect(storage.set(key, 'x')).rejects.toBeInstanceOf(InvalidStorageKeyError);
+      await expect(storage.get(key)).rejects.toBeInstanceOf(InvalidStorageKeyError);
+    });
+
     it.todo('does not leave partial state when a write fails mid-flight');
     it.todo('handles concurrent writes to different keys');
   });
