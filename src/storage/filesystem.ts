@@ -19,7 +19,7 @@ export class FilesystemStorage implements Storage {
     return err instanceof Error && 'code' in err && err.code === 'ENOENT';
   }
 
-  async get(key: StorageKey): Promise<string | null> {
+  async get(key: string): Promise<string | null> {
     try {
       assertValidKey(key);
       const filePath = this.getFilePath(key);
@@ -30,7 +30,7 @@ export class FilesystemStorage implements Storage {
     }
   }
 
-  async set(key: StorageKey, value: string): Promise<void> {
+  async set(key: string, value: string): Promise<void> {
     assertValidKey(key);
     const target = this.getFilePath(key);
     await mkdir(dirname(target), { recursive: true });
