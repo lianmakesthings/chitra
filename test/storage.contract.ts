@@ -76,6 +76,16 @@ export function runStorageContract(name: string, makeStorage: () => Promise<Stor
       await expect(storage.get(key)).rejects.toBeInstanceOf(InvalidStorageKeyError);
     });
 
-    it.todo('handles concurrent writes to different keys');
+    it('handles concurrent writes to different keys', async () => {
+      const storage = await makeStorage();
+
+      await Promise.all([
+        storage.set('merchants', 'value-a'),
+        storage.set('config', 'value-b'),
+      ]);
+
+      expect(await storage.get('merchants')).toBe('value-a');
+      expect(await storage.get('config')).toBe('value-b');
+    });
   });
 }
