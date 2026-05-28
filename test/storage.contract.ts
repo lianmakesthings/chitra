@@ -76,7 +76,6 @@ export function runStorageContract(name: string, makeStorage: () => Promise<Stor
       await expect(storage.get(key)).rejects.toBeInstanceOf(InvalidStorageKeyError);
     });
 
-    it.todo('does not leave partial state when a write fails mid-flight');
     it.todo('handles concurrent writes to different keys');
   });
 }
