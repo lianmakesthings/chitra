@@ -17,7 +17,15 @@ runStorageContract('FilesystemStorage', async () => {
 });
 
 
-describe('FilesystemStorage: durability', () => {
+describe('FilesystemStorage', () => {
+    it('writes files inside the data directory', async () => {
+      const dir = await mkdtemp(join(tmpdir(), 'chitra-fs-'));
+      const storage = new FilesystemStorage(dir);
+      await storage.set('merchants', 'x');
+      const entries = await fsp.readdir(dir);
+      expect(entries).toContain('merchants.md');
+    });
+
   it('does not leave partial state when rename fails mid-write', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'chitra-fs-'));
     const storage = new FilesystemStorage(dir);

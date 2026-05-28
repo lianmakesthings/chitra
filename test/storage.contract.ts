@@ -38,6 +38,11 @@ export function runStorageContract(name: string, makeStorage: () => Promise<Stor
       expect(await storage.get(key)).toBe(newValue);
     });
 
+    it('round-trips an empty string', async () => {
+      const storage = await makeStorage();
+      await storage.set('merchants', '');
+      expect(await storage.get('merchants')).toBe('');
+    });
 
     it('keeps separate keys independent', async () => {
       const storage = await makeStorage();
