@@ -21,7 +21,7 @@ export class FilesystemStorage implements Storage {
 
   async get(key: StorageKey): Promise<string | null> {
     try {
-      assertValidKey(key)
+      assertValidKey(key);
       const filePath = this.getFilePath(key);
       return await readFile(filePath, 'utf8');
     } catch (err) {
@@ -39,7 +39,7 @@ export class FilesystemStorage implements Storage {
     try {
       await rename(tmp, target);
     } catch (err) {
-      await unlink(tmp).catch(() => {});  // best-effort cleanup
+      await unlink(tmp).catch(() => {}); // best-effort cleanup
       throw err;
     }
   }
