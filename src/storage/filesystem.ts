@@ -1,7 +1,8 @@
 import { type Storage, assertValidKey } from './interface.js';
-import { mkdir, rename, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, rename, writeFile, readFile, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { join } from 'node:path';
 
 const EXTENSIONS: Record<string, string> = {
   config: '.yaml',
@@ -12,7 +13,7 @@ export class FilesystemStorage implements Storage {
   constructor(private readonly dataDir: string) {}
 
   getFilePath(key: string) {
-    return this.dataDir + key + EXTENSIONS[key];
+    return join(this.dataDir, key + EXTENSIONS[key]);
   }
 
   isENOENT(err: unknown) {
@@ -36,6 +37,11 @@ export class FilesystemStorage implements Storage {
     await mkdir(dirname(target), { recursive: true });
     const tmp = `${target}.${randomBytes(6).toString('hex')}.tmp`;
     await writeFile(tmp, _value, 'utf8');
-    await rename(tmp, target);
+    try {
+      await rename(tmp, target);
+    } catch (err) {
+      await unlink(tmp).catch(() => {});  // best-effort cleanup
+      throw err;
+    }
   }
 }
