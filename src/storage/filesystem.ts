@@ -12,11 +12,11 @@ const EXTENSIONS: Record<StorageKey, string> = {
 export class FilesystemStorage implements Storage {
   constructor(private readonly dataDir: string) {}
 
-  getFilePath(key: StorageKey) {
+  private getFilePath(key: StorageKey) {
     return join(this.dataDir, key + EXTENSIONS[key]);
   }
 
-  isENOENT(err: unknown) {
+  private isENOENT(err: unknown) {
     return err instanceof Error && 'code' in err && err.code === 'ENOENT';
   }
 
