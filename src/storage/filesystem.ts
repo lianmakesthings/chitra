@@ -1,8 +1,7 @@
 import { type Storage, type StorageKey, assertValidKey } from './interface.js';
 import { mkdir, rename, writeFile, readFile, unlink } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { join } from 'node:path';
 
 const EXTENSIONS: Record<StorageKey, string> = {
   config: '.yaml',
