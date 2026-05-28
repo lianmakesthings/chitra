@@ -20,10 +20,10 @@ export class FilesystemStorage implements Storage {
     return err instanceof Error && 'code' in err && err.code === 'ENOENT';
   }
 
-  async get(_key: StorageKey): Promise<string | null> {
+  async get(key: StorageKey): Promise<string | null> {
     try {
-      assertValidKey(_key)
-      const filePath = this.getFilePath(_key);
+      assertValidKey(key)
+      const filePath = this.getFilePath(key);
       return await readFile(filePath, 'utf8');
     } catch (err) {
       if (this.isENOENT(err)) return null;
@@ -31,12 +31,12 @@ export class FilesystemStorage implements Storage {
     }
   }
 
-  async set(_key: StorageKey, _value: string): Promise<void> {
-    assertValidKey(_key);
-    const target = this.getFilePath(_key);
+  async set(key: StorageKey, value: string): Promise<void> {
+    assertValidKey(key);
+    const target = this.getFilePath(key);
     await mkdir(dirname(target), { recursive: true });
     const tmp = `${target}.${randomBytes(6).toString('hex')}.tmp`;
-    await writeFile(tmp, _value, 'utf8');
+    await writeFile(tmp, value, 'utf8');
     try {
       await rename(tmp, target);
     } catch (err) {
