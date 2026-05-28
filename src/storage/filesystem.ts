@@ -1,10 +1,10 @@
-import { type Storage, assertValidKey } from './interface.js';
+import { type Storage, type StorageKey, assertValidKey } from './interface.js';
 import { mkdir, rename, writeFile, readFile, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 
-const EXTENSIONS: Record<string, string> = {
+const EXTENSIONS: Record<StorageKey, string> = {
   config: '.yaml',
   merchants: '.md',
 };
@@ -12,7 +12,7 @@ const EXTENSIONS: Record<string, string> = {
 export class FilesystemStorage implements Storage {
   constructor(private readonly dataDir: string) {}
 
-  getFilePath(key: string) {
+  getFilePath(key: StorageKey) {
     return join(this.dataDir, key + EXTENSIONS[key]);
   }
 
@@ -20,7 +20,7 @@ export class FilesystemStorage implements Storage {
     return err instanceof Error && 'code' in err && err.code === 'ENOENT';
   }
 
-  async get(_key: string): Promise<string | null> {
+  async get(_key: StorageKey): Promise<string | null> {
     try {
       assertValidKey(_key)
       const filePath = this.getFilePath(_key);
@@ -31,7 +31,7 @@ export class FilesystemStorage implements Storage {
     }
   }
 
-  async set(_key: string, _value: string): Promise<void> {
+  async set(_key: StorageKey, _value: string): Promise<void> {
     assertValidKey(_key);
     const target = this.getFilePath(_key);
     await mkdir(dirname(target), { recursive: true });

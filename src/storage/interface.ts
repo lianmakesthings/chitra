@@ -1,6 +1,9 @@
+export const STORAGE_KEYS = ['config', 'merchants'] as const;
+export type StorageKey = (typeof STORAGE_KEYS)[number];
+
 export interface Storage {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string): Promise<void>;
+  get(key: StorageKey): Promise<string | null>;
+  set(key: StorageKey, value: string): Promise<void>;
 }
 
 export class InvalidStorageKeyError extends Error {
@@ -11,7 +14,7 @@ export class InvalidStorageKeyError extends Error {
 }
 
 export function assertValidKey(key: string): void {
-  if (!/^[a-z0-9_-]+$/.test(key)) {
+  if (!(STORAGE_KEYS as readonly string[]).includes(key)) {
     throw new InvalidStorageKeyError(key);
   }
 }

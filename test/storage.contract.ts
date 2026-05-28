@@ -12,9 +12,9 @@ export function runStorageContract(name: string, makeStorage: () => Promise<Stor
       expect(storage).toBeDefined();
     });
 
-    it('returns null for an unknown key', async () => {
+    it('returns null for a known key with no value yet', async () => {
       const storage = await makeStorage();
-      expect(await storage.get('unknown')).toBeNull();
+      expect(await storage.get('merchants')).toBeNull();
     });
 
     it('writes and reads a value', async () => {
@@ -70,6 +70,7 @@ export function runStorageContract(name: string, makeStorage: () => Promise<Stor
       ['absolute', '/etc/passwd'],
       ['null byte', 'foo\0bar'],
       ['backslash', 'foo\\bar'],
+      ['unknown well-formed key', 'sessions'],
     ])('rejects invalid key: %s', async (_label, key) => {
       const storage = await makeStorage();
       await expect(storage.set(key, 'x')).rejects.toBeInstanceOf(InvalidStorageKeyError);
