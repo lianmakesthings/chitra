@@ -386,9 +386,6 @@ describe('Config parser', () => {
       }
     });
   });
-
-  // Error quality
-  it.todo('error messages include the offending field path');
 });
 
 describe('serializeConfig', () => {
