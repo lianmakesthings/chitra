@@ -2,135 +2,162 @@ import { describe, expect, it } from 'vitest';
 import { parseConfig, serializeConfig } from '../src/config/parse.js';
 import { ZodError } from 'zod';
 
-describe('parseConfig', () => {
+describe('Config parser', () => {
   it('returns null for null input', () => {
     expect(parseConfig(null)).toBeNull();
   });
 
-  it('parses a minimal valid config (default budget only)', () => {
-    const budgetId = '00000000-0000-4000-8000-000000000000';
-    const yaml = ['budgets:', `  default: ${budgetId}`, 'accounts: {}', 'flags: {}', ''].join('\n');
+  describe('checking valid config', () => {
+    it('parses a minimal valid config (default budget only)', () => {
+      const budgetId = '00000000-0000-4000-8000-000000000000';
+      const yaml = ['budgets:', `  default: ${budgetId}`, 'accounts: {}', 'flags: {}', ''].join(
+        '\n',
+      );
 
-    expect(parseConfig(yaml)).toEqual({
-      budgets: { default: budgetId },
-      accounts: {},
-      flags: {},
+      expect(parseConfig(yaml)).toEqual({
+        budgets: { default: budgetId },
+        accounts: {},
+        flags: {},
+      });
+    });
+
+    it('parses a config with multiple budgets, accounts, and flags', () => {
+      const defaultBudgetId = '00000000-0000-4000-8000-000000000001';
+      const bizBudgetId = '00000000-0000-4000-8000-000000000002';
+      const checkingAccount = 'Checking';
+      const savingsAccount = 'Savings';
+      const sharedFlag = 'Shared';
+      const reimburseFlag = 'Reimbursable';
+
+      const yaml = [
+        'budgets:',
+        `  default: ${defaultBudgetId}`,
+        `  business: ${bizBudgetId}`,
+        'accounts:',
+        '  checking:',
+        '    budget: default',
+        `    ynab_name: ${checkingAccount}`,
+        '  savings:',
+        '    budget: default',
+        `    ynab_name: ${savingsAccount}`,
+        '  business_checking:',
+        '    budget: business',
+        `    ynab_name: ${checkingAccount}`,
+        'flags:',
+        '  shared:',
+        '    color: red',
+        `    name: ${sharedFlag}`,
+        '  reimbursable:',
+        '    color: orange',
+        `    name: ${reimburseFlag}`,
+        '',
+      ].join('\n');
+
+      expect(parseConfig(yaml)).toEqual({
+        budgets: {
+          default: defaultBudgetId,
+          business: bizBudgetId,
+        },
+        accounts: {
+          checking: { budget: 'default', ynab_name: checkingAccount },
+          savings: { budget: 'default', ynab_name: savingsAccount },
+          business_checking: { budget: 'business', ynab_name: checkingAccount },
+        },
+        flags: {
+          shared: { color: 'red', name: sharedFlag },
+          reimbursable: { color: 'orange', name: reimburseFlag },
+        },
+      });
     });
   });
 
-  it('parses a config with multiple budgets, accounts, and flags', () => {
-    const defaultBudgetId = '00000000-0000-4000-8000-000000000001';
-    const bizBudgetId = '00000000-0000-4000-8000-000000000002';
-    const checkingAccount = 'Checking';
-    const savingsAccount = 'Savings';
-    const sharedFlag = 'Shared';
-    const reimburseFlag = 'Reimbursable';
+  describe('checking missing props', () => {
+    it('rejects a config without a default budget', () => {
+      const yamlNoDefault = [
+        'budgets:',
+        '  business: 00000000-0000-4000-8000-000000000001',
+        'accounts: {}',
+        'flags: {}',
+        '',
+      ].join('\n');
 
-    const yaml = [
-      'budgets:',
-      `  default: ${defaultBudgetId}`,
-      `  business: ${bizBudgetId}`,
-      'accounts:',
-      '  checking:',
-      '    budget: default',
-      `    ynab_name: ${checkingAccount}`,
-      '  savings:',
-      '    budget: default',
-      `    ynab_name: ${savingsAccount}`,
-      '  business_checking:',
-      '    budget: business',
-      `    ynab_name: ${checkingAccount}`,
-      'flags:',
-      '  shared:',
-      '    color: red',
-      `    name: ${sharedFlag}`,
-      '  reimbursable:',
-      '    color: orange',
-      `    name: ${reimburseFlag}`,
-      '',
-    ].join('\n');
-
-    expect(parseConfig(yaml)).toEqual({
-      budgets: {
-        default: defaultBudgetId,
-        business: bizBudgetId,
-      },
-      accounts: {
-        checking: { budget: 'default', ynab_name: checkingAccount },
-        savings: { budget: 'default', ynab_name: savingsAccount },
-        business_checking: { budget: 'business', ynab_name: checkingAccount },
-      },
-      flags: {
-        shared: { color: 'red', name: sharedFlag },
-        reimbursable: { color: 'orange', name: reimburseFlag },
-      },
+      expect(() => parseConfig(yamlNoDefault)).toThrow(/budgets.*default/);
     });
-  });
 
-  // Required-field rules
-  it('rejects a config without a default budget', () => {
-    const yamlNoDefault = [
-      'budgets:',
-      '  business: 00000000-0000-4000-8000-000000000001',
-      'accounts: {}',
-      'flags: {}',
-      '',
-    ].join('\n');
+    it('rejects a config missing the budgets section', () => {
+      const yamlNoBudgets = ['accounts: {}', 'flags: {}', ''].join('\n');
 
-    expect(() => parseConfig(yamlNoDefault)).toThrow(/budgets.*default/);
-  });
+      expect(() => parseConfig(yamlNoBudgets)).toThrow(ZodError);
+      try {
+        parseConfig(yamlNoBudgets);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([expect.objectContaining({ path: ['budgets'] })]),
+        );
+      }
+    });
 
-  it('rejects a config missing the budgets section', () => {
-    const yamlNoBudgets = ['accounts: {}', 'flags: {}', ''].join('\n');
+    it('rejects a config missing the accounts section', () => {
+      const yamlNoAccounts = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'flags: {}',
+        '',
+      ].join('\n');
 
-    expect(() => parseConfig(yamlNoBudgets)).toThrow(ZodError);
-    try {
-      parseConfig(yamlNoBudgets);
-    } catch (err) {
-      expect((err as ZodError).issues).toEqual(
-        expect.arrayContaining([expect.objectContaining({ path: ['budgets'] })]),
-      );
-    }
-  });
+      expect(() => parseConfig(yamlNoAccounts)).toThrow(ZodError);
+      try {
+        parseConfig(yamlNoAccounts);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([expect.objectContaining({ path: ['accounts'] })]),
+        );
+      }
+    });
 
-  it('rejects a config missing the accounts section', () => {
-    const yamlNoAccounts = [
-      'budgets:',
-      '  default: 00000000-0000-4000-8000-000000000001',
-      'flags: {}',
-      '',
-    ].join('\n');
+    it('rejects a config missing the flags section', () => {
+      const yamlNoFlags = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts: {}',
+        '',
+      ].join('\n');
 
-    expect(() => parseConfig(yamlNoAccounts)).toThrow(ZodError);
-    try {
-      parseConfig(yamlNoAccounts);
-    } catch (err) {
-      expect((err as ZodError).issues).toEqual(
-        expect.arrayContaining([expect.objectContaining({ path: ['accounts'] })]),
-      );
-    }
-  });
-
-  it('rejects a config missing the flags section', () => {
-    const yamlNoFlags = [
-      'budgets:',
-      '  default: 00000000-0000-4000-8000-000000000001',
-      'accounts: {}',
-      '',
-    ].join('\n');
-
-    expect(() => parseConfig(yamlNoFlags)).toThrow(ZodError);
-    try {
-      parseConfig(yamlNoFlags);
-    } catch (err) {
-      expect((err as ZodError).issues).toEqual(
-        expect.arrayContaining([expect.objectContaining({ path: ['flags'] })]),
-      );
-    }
+      expect(() => parseConfig(yamlNoFlags)).toThrow(ZodError);
+      try {
+        parseConfig(yamlNoFlags);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([expect.objectContaining({ path: ['flags'] })]),
+        );
+      }
+    });
   });
 
   // Referential integrity
-  it.todo('rejects when account.budget references an unknown budget alias');
+  it('rejects when account.budget references an unknown budget alias', () => {
+    const yamlBadRef = [
+      'budgets:',
+      '  default: 00000000-0000-4000-8000-000000000001',
+      'accounts:',
+      '  checking:',
+      '    budget: business',       // 'business' is syntactically valid but not in budgets
+      '    ynab_name: Checking',
+      'flags: {}',
+      '',
+    ].join('\n');
+
+    expect(() => parseConfig(yamlBadRef)).toThrow(ZodError);
+    try {
+      parseConfig(yamlBadRef);
+    } catch (err) {
+      expect((err as ZodError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: ['accounts', 'checking', 'budget'] }),
+        ]),
+      );
+    }
+  });
 
   // Strict mode
   it.todo('rejects unknown top-level keys');
