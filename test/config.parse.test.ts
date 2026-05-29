@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseConfig, serializeConfig } from '../src/config/parse.js';
+import { ZodError } from 'zod';
 
 describe('parseConfig', () => {
   it('returns null for null input', () => {
@@ -67,10 +68,66 @@ describe('parseConfig', () => {
   });
 
   // Required-field rules
-  it.todo('rejects a config without a default budget');
-  it.todo('rejects a config missing the budgets section');
-  it.todo('rejects a config missing the accounts section');
-  it.todo('rejects a config missing the flags section');
+  it('rejects a config without a default budget', () => {
+    const yamlNoDefault = [
+      'budgets:',
+      '  business: 00000000-0000-4000-8000-000000000001',
+      'accounts: {}',
+      'flags: {}',
+      '',
+    ].join('\n');
+
+    expect(() => parseConfig(yamlNoDefault)).toThrow(/budgets.*default/);
+  });
+
+  it('rejects a config missing the budgets section', () => {
+    const yamlNoBudgets = ['accounts: {}', 'flags: {}', ''].join('\n');
+
+    expect(() => parseConfig(yamlNoBudgets)).toThrow(ZodError);
+    try {
+      parseConfig(yamlNoBudgets);
+    } catch (err) {
+      expect((err as ZodError).issues).toEqual(
+        expect.arrayContaining([expect.objectContaining({ path: ['budgets'] })]),
+      );
+    }
+  });
+
+  it('rejects a config missing the accounts section', () => {
+    const yamlNoAccounts = [
+      'budgets:',
+      '  default: 00000000-0000-4000-8000-000000000001',
+      'flags: {}',
+      '',
+    ].join('\n');
+
+    expect(() => parseConfig(yamlNoAccounts)).toThrow(ZodError);
+    try {
+      parseConfig(yamlNoAccounts);
+    } catch (err) {
+      expect((err as ZodError).issues).toEqual(
+        expect.arrayContaining([expect.objectContaining({ path: ['accounts'] })]),
+      );
+    }
+  });
+
+  it('rejects a config missing the flags section', () => {
+    const yamlNoFlags = [
+      'budgets:',
+      '  default: 00000000-0000-4000-8000-000000000001',
+      'accounts: {}',
+      '',
+    ].join('\n');
+
+    expect(() => parseConfig(yamlNoFlags)).toThrow(ZodError);
+    try {
+      parseConfig(yamlNoFlags);
+    } catch (err) {
+      expect((err as ZodError).issues).toEqual(
+        expect.arrayContaining([expect.objectContaining({ path: ['flags'] })]),
+      );
+    }
+  });
 
   // Referential integrity
   it.todo('rejects when account.budget references an unknown budget alias');
