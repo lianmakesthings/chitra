@@ -81,18 +81,28 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlNoDefault)).toThrow(/budgets.*default/);
+
+      expect(() => parseConfig(yamlNoDefault)).toThrow(ZodError);
+      try { parseConfig(yamlNoDefault); }
+      catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ path: ['budgets', 'default'] }),
+          ]),
+        );
+      }
     });
 
     it('rejects a config missing the budgets section', () => {
       const yamlNoBudgets = ['accounts: {}', 'flags: {}', ''].join('\n');
 
       expect(() => parseConfig(yamlNoBudgets)).toThrow(ZodError);
-      try {
-        parseConfig(yamlNoBudgets);
-      } catch (err) {
+      try { parseConfig(yamlNoBudgets); }
+      catch (err) {
         expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ path: ['budgets'] })]),
+          expect.arrayContaining([
+            expect.objectContaining({ path: ['budgets'] }),
+          ]),
         );
       }
     });
@@ -106,11 +116,12 @@ describe('Config parser', () => {
       ].join('\n');
 
       expect(() => parseConfig(yamlNoAccounts)).toThrow(ZodError);
-      try {
-        parseConfig(yamlNoAccounts);
-      } catch (err) {
+      try { parseConfig(yamlNoAccounts); }
+      catch (err) {
         expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ path: ['accounts'] })]),
+          expect.arrayContaining([
+            expect.objectContaining({ path: ['accounts'] }),
+          ]),
         );
       }
     });
@@ -124,11 +135,12 @@ describe('Config parser', () => {
       ].join('\n');
 
       expect(() => parseConfig(yamlNoFlags)).toThrow(ZodError);
-      try {
-        parseConfig(yamlNoFlags);
-      } catch (err) {
+      try { parseConfig(yamlNoFlags); }
+      catch (err) {
         expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ path: ['flags'] })]),
+          expect.arrayContaining([
+            expect.objectContaining({ path: ['flags'] }),
+          ]),
         );
       }
     });
@@ -141,7 +153,7 @@ describe('Config parser', () => {
       '  default: 00000000-0000-4000-8000-000000000001',
       'accounts:',
       '  checking:',
-      '    budget: business',       // 'business' is syntactically valid but not in budgets
+      '    budget: business', // 'business' is syntactically valid but not in budgets
       '    ynab_name: Checking',
       'flags: {}',
       '',
