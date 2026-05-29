@@ -81,14 +81,12 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-
       expect(() => parseConfig(yamlNoDefault)).toThrow(ZodError);
-      try { parseConfig(yamlNoDefault); }
-      catch (err) {
+      try {
+        parseConfig(yamlNoDefault);
+      } catch (err) {
         expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({ path: ['budgets', 'default'] }),
-          ]),
+          expect.arrayContaining([expect.objectContaining({ path: ['budgets', 'default'] })]),
         );
       }
     });
@@ -97,12 +95,11 @@ describe('Config parser', () => {
       const yamlNoBudgets = ['accounts: {}', 'flags: {}', ''].join('\n');
 
       expect(() => parseConfig(yamlNoBudgets)).toThrow(ZodError);
-      try { parseConfig(yamlNoBudgets); }
-      catch (err) {
+      try {
+        parseConfig(yamlNoBudgets);
+      } catch (err) {
         expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({ path: ['budgets'] }),
-          ]),
+          expect.arrayContaining([expect.objectContaining({ path: ['budgets'] })]),
         );
       }
     });
@@ -116,12 +113,11 @@ describe('Config parser', () => {
       ].join('\n');
 
       expect(() => parseConfig(yamlNoAccounts)).toThrow(ZodError);
-      try { parseConfig(yamlNoAccounts); }
-      catch (err) {
+      try {
+        parseConfig(yamlNoAccounts);
+      } catch (err) {
         expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({ path: ['accounts'] }),
-          ]),
+          expect.arrayContaining([expect.objectContaining({ path: ['accounts'] })]),
         );
       }
     });
@@ -135,12 +131,11 @@ describe('Config parser', () => {
       ].join('\n');
 
       expect(() => parseConfig(yamlNoFlags)).toThrow(ZodError);
-      try { parseConfig(yamlNoFlags); }
-      catch (err) {
+      try {
+        parseConfig(yamlNoFlags);
+      } catch (err) {
         expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({ path: ['flags'] }),
-          ]),
+          expect.arrayContaining([expect.objectContaining({ path: ['flags'] })]),
         );
       }
     });
