@@ -160,9 +160,94 @@ describe('Config parser', () => {
   });
 
   // Strict mode
-  it.todo('rejects unknown top-level keys');
-  it.todo('rejects unknown keys inside an account entry');
-  it.todo('rejects unknown keys inside a flag entry');
+  describe('checking in strict mode', () => {
+    it('rejects unknown top-level keys', () => {
+      const extraKey = 'extras';
+      const yamlUnknownTopLevel = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts: {}',
+        'flags: {}',
+        `${extraKey}: should-not-be-here`,
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlUnknownTopLevel)).toThrow(ZodError);
+      try {
+        parseConfig(yamlUnknownTopLevel);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'unrecognized_keys',
+              path: [],
+              keys: [extraKey],
+            }),
+          ]),
+        );
+      }
+    });
+
+    it('rejects unknown keys inside an account entry', () => {
+      const extraAccountField = 'nickname';
+      const yamlUnknownAccountField = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts:',
+        '  checking:',
+        '    budget: default',
+        '    ynab_name: Checking',
+        `    ${extraAccountField}: chk`,
+        'flags: {}',
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlUnknownAccountField)).toThrow(ZodError);
+      try {
+        parseConfig(yamlUnknownAccountField);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'unrecognized_keys',
+              path: ['accounts', 'checking'],
+              keys: [extraAccountField],
+            }),
+          ]),
+        );
+      }
+    });
+
+    it('rejects unknown keys inside a flag entry', () => {
+      const extraFlagField = 'icon';
+      const yamlUnknownFlagField = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts: {}',
+        'flags:',
+        '  shared:',
+        '    color: red',
+        '    name: Shared',
+        `    ${extraFlagField}: star`,
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlUnknownFlagField)).toThrow(ZodError);
+      try {
+        parseConfig(yamlUnknownFlagField);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'unrecognized_keys',
+              path: ['flags', 'shared'],
+              keys: [extraFlagField],
+            }),
+          ]),
+        );
+      }
+    });
+  });
 
   // Field validation
   it.todo('rejects malformed budget UUIDs');
