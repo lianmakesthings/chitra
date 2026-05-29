@@ -262,11 +262,135 @@ describe('Config parser', () => {
   });
 
   // Field validation
-  it.todo('rejects malformed budget UUIDs');
-  it.todo('rejects unknown flag colors');
-  it.todo('rejects budget aliases that violate the naming regex');
-  it.todo('rejects account aliases that violate the naming regex');
-  it.todo('rejects flag aliases that violate the naming regex');
+  describe('validating fields', () => {
+    it('rejects malformed budget UUIDs', () => {
+      const yamlBadUuid = [
+        'budgets:',
+        '  default: not-a-uuid',
+        'accounts: {}',
+        'flags: {}',
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlBadUuid)).toThrow(ZodError);
+      try {
+        parseConfig(yamlBadUuid);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'invalid_format',
+              path: ['budgets', 'default'],
+            }),
+          ]),
+        );
+      }
+    });
+
+    it('rejects unknown flag colors', () => {
+      const yamlBadColor = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts: {}',
+        'flags:',
+        '  shared:',
+        '    color: magenta',
+        '    name: Shared',
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlBadColor)).toThrow(ZodError);
+      try {
+        parseConfig(yamlBadColor);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'invalid_value',
+              path: ['flags', 'shared', 'color'],
+            }),
+          ]),
+        );
+      }
+    });
+
+    it('rejects budget aliases that violate the naming regex', () => {
+      const yamlBadBudgetAlias = [
+        'budgets:',
+        '  Default: 00000000-0000-4000-8000-000000000001', // capitalized — fails [a-z]... regex
+        'accounts: {}',
+        'flags: {}',
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlBadBudgetAlias)).toThrow(ZodError);
+      try {
+        parseConfig(yamlBadBudgetAlias);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'invalid_key',
+              path: ['budgets', 'Default'],
+            }),
+          ]),
+        );
+      }
+    });
+    it('rejects account aliases that violate the naming regex', () => {
+      const yamlBadAccountAlias = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts:',
+        '  BadAccount:', // capitalized
+        '    budget: default',
+        '    ynab_name: Checking',
+        'flags: {}',
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlBadAccountAlias)).toThrow(ZodError);
+      try {
+        parseConfig(yamlBadAccountAlias);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'invalid_key',
+              path: ['accounts', 'BadAccount'],
+            }),
+          ]),
+        );
+      }
+    });
+
+    it('rejects flag aliases that violate the naming regex', () => {
+      const yamlBadFlagAlias = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts: {}',
+        'flags:',
+        '  Shared:', // capitalized
+        '    color: red',
+        '    name: Shared',
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yamlBadFlagAlias)).toThrow(ZodError);
+      try {
+        parseConfig(yamlBadFlagAlias);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'invalid_key',
+              path: ['flags', 'Shared'],
+            }),
+          ]),
+        );
+      }
+    });
+  });
 
   // Error quality
   it.todo('error messages include the offending field path');
