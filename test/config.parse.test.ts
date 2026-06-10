@@ -6,12 +6,16 @@ import type { Config } from '../src/config/schema.js';
 describe('Config parser', () => {
   const expectIssue = (input: string | null, matcher: Record<string, unknown>) => {
     let caught: unknown;
-    try { parseConfig(input); } catch (e) { caught = e; }
+    try {
+      parseConfig(input);
+    } catch (e) {
+      caught = e;
+    }
     expect(caught).toBeInstanceOf(ZodError);
     expect((caught as ZodError).issues).toEqual(
       expect.arrayContaining([expect.objectContaining(matcher)]),
     );
-  }
+  };
 
   it('returns null for null input', () => {
     expect(parseConfig(null)).toBeNull();
@@ -127,7 +131,7 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expectIssue(yamlNoFlags, { path: ['flags'] })
+      expectIssue(yamlNoFlags, { path: ['flags'] });
     });
   });
 
@@ -164,7 +168,7 @@ describe('Config parser', () => {
         code: 'unrecognized_keys',
         path: [],
         keys: [extraKey],
-      })
+      });
     });
 
     it('rejects unknown keys inside an account entry', () => {
@@ -185,7 +189,7 @@ describe('Config parser', () => {
         code: 'unrecognized_keys',
         path: ['accounts', 'checking'],
         keys: [extraAccountField],
-      })
+      });
     });
 
     it('rejects unknown keys inside a flag entry', () => {
@@ -206,7 +210,7 @@ describe('Config parser', () => {
         code: 'unrecognized_keys',
         path: ['flags', 'shared'],
         keys: [extraFlagField],
-      })
+      });
     });
   });
 
@@ -224,7 +228,7 @@ describe('Config parser', () => {
       expectIssue(yamlBadUuid, {
         code: 'invalid_format',
         path: ['budgets', 'default'],
-      })
+      });
     });
 
     it('rejects empty account ynab_name', () => {
@@ -260,7 +264,7 @@ describe('Config parser', () => {
       expectIssue(yamlBadColor, {
         code: 'invalid_value',
         path: ['flags', 'shared', 'color'],
-      })
+      });
     });
 
     it('rejects budget aliases that violate the naming regex', () => {
@@ -275,7 +279,7 @@ describe('Config parser', () => {
       expectIssue(yamlBadBudgetAlias, {
         code: 'invalid_key',
         path: ['budgets', 'Default'],
-      })
+      });
     });
     it('rejects account aliases that violate the naming regex', () => {
       const yamlBadAccountAlias = [
@@ -292,7 +296,7 @@ describe('Config parser', () => {
       expectIssue(yamlBadAccountAlias, {
         code: 'invalid_key',
         path: ['accounts', 'BadAccount'],
-      })
+      });
     });
 
     it('rejects flag aliases that violate the naming regex', () => {
