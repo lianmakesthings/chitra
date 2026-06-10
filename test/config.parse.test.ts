@@ -4,6 +4,15 @@ import { ZodError } from 'zod';
 import type { Config } from '../src/config/schema.js';
 
 describe('Config parser', () => {
+  const expectIssue = (input: string | null, matcher: Record<string, unknown>) => {
+    let caught: unknown;
+    try { parseConfig(input); } catch (e) { caught = e; }
+    expect(caught).toBeInstanceOf(ZodError);
+    expect((caught as ZodError).issues).toEqual(
+      expect.arrayContaining([expect.objectContaining(matcher)]),
+    );
+  }
+
   it('returns null for null input', () => {
     expect(parseConfig(null)).toBeNull();
   });
@@ -90,27 +99,13 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlNoDefault)).toThrow(ZodError);
-      try {
-        parseConfig(yamlNoDefault);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ path: ['budgets', 'default'] })]),
-        );
-      }
+      expectIssue(yamlNoDefault, { path: ['budgets', 'default'] });
     });
 
     it('rejects a config missing the budgets section', () => {
       const yamlNoBudgets = ['accounts: {}', 'flags: {}', ''].join('\n');
 
-      expect(() => parseConfig(yamlNoBudgets)).toThrow(ZodError);
-      try {
-        parseConfig(yamlNoBudgets);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ path: ['budgets'] })]),
-        );
-      }
+      expectIssue(yamlNoBudgets, { path: ['budgets'] });
     });
 
     it('rejects a config missing the accounts section', () => {
@@ -121,14 +116,7 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlNoAccounts)).toThrow(ZodError);
-      try {
-        parseConfig(yamlNoAccounts);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ path: ['accounts'] })]),
-        );
-      }
+      expectIssue(yamlNoAccounts, { path: ['accounts'] });
     });
 
     it('rejects a config missing the flags section', () => {
@@ -139,14 +127,7 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlNoFlags)).toThrow(ZodError);
-      try {
-        parseConfig(yamlNoFlags);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ path: ['flags'] })]),
-        );
-      }
+      expectIssue(yamlNoFlags, { path: ['flags'] })
     });
   });
 
@@ -163,16 +144,7 @@ describe('Config parser', () => {
       '',
     ].join('\n');
 
-    expect(() => parseConfig(yamlBadRef)).toThrow(ZodError);
-    try {
-      parseConfig(yamlBadRef);
-    } catch (err) {
-      expect((err as ZodError).issues).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ path: ['accounts', 'checking', 'budget'] }),
-        ]),
-      );
-    }
+    expectIssue(yamlBadRef, { path: ['accounts', 'checking', 'budget'] });
   });
 
   // Strict mode
@@ -188,20 +160,11 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlUnknownTopLevel)).toThrow(ZodError);
-      try {
-        parseConfig(yamlUnknownTopLevel);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'unrecognized_keys',
-              path: [],
-              keys: [extraKey],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlUnknownTopLevel, {
+        code: 'unrecognized_keys',
+        path: [],
+        keys: [extraKey],
+      })
     });
 
     it('rejects unknown keys inside an account entry', () => {
@@ -218,20 +181,11 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlUnknownAccountField)).toThrow(ZodError);
-      try {
-        parseConfig(yamlUnknownAccountField);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'unrecognized_keys',
-              path: ['accounts', 'checking'],
-              keys: [extraAccountField],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlUnknownAccountField, {
+        code: 'unrecognized_keys',
+        path: ['accounts', 'checking'],
+        keys: [extraAccountField],
+      })
     });
 
     it('rejects unknown keys inside a flag entry', () => {
@@ -248,20 +202,11 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlUnknownFlagField)).toThrow(ZodError);
-      try {
-        parseConfig(yamlUnknownFlagField);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'unrecognized_keys',
-              path: ['flags', 'shared'],
-              keys: [extraFlagField],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlUnknownFlagField, {
+        code: 'unrecognized_keys',
+        path: ['flags', 'shared'],
+        keys: [extraFlagField],
+      })
     });
   });
 
@@ -276,23 +221,14 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlBadUuid)).toThrow(ZodError);
-      try {
-        parseConfig(yamlBadUuid);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'invalid_format',
-              path: ['budgets', 'default'],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlBadUuid, {
+        code: 'invalid_format',
+        path: ['budgets', 'default'],
+      })
     });
 
     it('rejects empty account ynab_name', () => {
-      const yaml = [
+      const yamlEmptyAccountName = [
         'budgets:',
         '  default: 00000000-0000-4000-8000-000000000001',
         'accounts:',
@@ -303,19 +239,10 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yaml)).toThrow(ZodError);
-      try {
-        parseConfig(yaml);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'too_small',
-              path: ['accounts', 'checking', 'ynab_name'],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlEmptyAccountName, {
+        code: 'too_small',
+        path: ['accounts', 'checking', 'ynab_name'],
+      });
     });
 
     it('rejects unknown flag colors', () => {
@@ -330,19 +257,10 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlBadColor)).toThrow(ZodError);
-      try {
-        parseConfig(yamlBadColor);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'invalid_value',
-              path: ['flags', 'shared', 'color'],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlBadColor, {
+        code: 'invalid_value',
+        path: ['flags', 'shared', 'color'],
+      })
     });
 
     it('rejects budget aliases that violate the naming regex', () => {
@@ -354,19 +272,10 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlBadBudgetAlias)).toThrow(ZodError);
-      try {
-        parseConfig(yamlBadBudgetAlias);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'invalid_key',
-              path: ['budgets', 'Default'],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlBadBudgetAlias, {
+        code: 'invalid_key',
+        path: ['budgets', 'Default'],
+      })
     });
     it('rejects account aliases that violate the naming regex', () => {
       const yamlBadAccountAlias = [
@@ -380,19 +289,10 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlBadAccountAlias)).toThrow(ZodError);
-      try {
-        parseConfig(yamlBadAccountAlias);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'invalid_key',
-              path: ['accounts', 'BadAccount'],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlBadAccountAlias, {
+        code: 'invalid_key',
+        path: ['accounts', 'BadAccount'],
+      })
     });
 
     it('rejects flag aliases that violate the naming regex', () => {
@@ -407,19 +307,10 @@ describe('Config parser', () => {
         '',
       ].join('\n');
 
-      expect(() => parseConfig(yamlBadFlagAlias)).toThrow(ZodError);
-      try {
-        parseConfig(yamlBadFlagAlias);
-      } catch (err) {
-        expect((err as ZodError).issues).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              code: 'invalid_key',
-              path: ['flags', 'Shared'],
-            }),
-          ]),
-        );
-      }
+      expectIssue(yamlBadFlagAlias, {
+        code: 'invalid_key',
+        path: ['flags', 'Shared'],
+      });
     });
   });
 });

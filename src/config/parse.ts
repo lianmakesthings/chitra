@@ -2,8 +2,9 @@ import { ConfigSchema, type Config } from './schema.js';
 import YAML from 'yaml';
 
 /**
- * Parse a YAML string into a validated Config, or return null when the storage
- * value is absent (uninitialized state).
+ * Parse a YAML string into a validated Config, or return null when the
+ * storage value is absent. Throws ZodError if the YAML is structurally
+ * invalid or violates a schema rule.
  */
 export function parseConfig(yamlOrNull: string | null): Config | null {
   if (yamlOrNull === null) return null;
