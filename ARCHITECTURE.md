@@ -113,6 +113,16 @@ flags:
     name: Shared
 ```
 
+**Validation rules** (enforced by the schema at parse time):
+
+- `budgets.default` is required. Pre-onboarding state is "no `config.yaml` in storage at all" rather than "config with no default."
+- Each `accounts.X.budget` must reference a key in `budgets`. Typos in the cross-reference fail at parse time, not at tool-call time.
+- Strict mode — unknown top-level or nested keys are rejected. Catches typos like `budget:` vs `budgets:` and prevents stale fields from accumulating.
+- Budget IDs are validated as UUIDs.
+- Flag `color` is one of YNAB's six: `red`, `orange`, `yellow`, `green`, `blue`, `purple`.
+- Aliases (budgets, accounts, flags) match `^[a-z][a-z0-9_-]*$` — lowercase, starting with a letter, alphanumeric plus `_` and `-`.
+- An absent storage value (`Storage.get('config') === null`) is treated as "uninitialized"; the parser returns `null` rather than failing.
+
 ### `merchants.md` — living normalization data
 
 Stores two things that grow organically through conversation: the strings to strip from raw bank payee names, and the accumulated merchant-to-category mapping. Both are discovered at runtime and confirmed by the user, which is why they live here rather than in static config.

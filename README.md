@@ -25,3 +25,12 @@ bun run format     # prettier --write
 ```
 
 Node-only equivalents: `bun run dev:node`, `bun run smoke:node`.
+
+## Configuration
+
+User-defined aliases live in storage as `config.yaml` — set up once during onboarding via MCP tools, rarely touched after. The full shape and rules are in [ARCHITECTURE.md](./ARCHITECTURE.md#configyaml--structured-set-and-forget-config); the essentials:
+
+- A `default` budget is required.
+- Aliases for budgets, accounts, and flags must be lowercase, start with a letter, and contain only letters, numbers, `_`, or `-` (e.g. `checking`, `business`, `shared`).
+- Flag colors must be one of YNAB's six: `red`, `orange`, `yellow`, `green`, `blue`, `purple`.
+- Account references to budgets must use defined budget aliases (cross-references are checked at parse time).
