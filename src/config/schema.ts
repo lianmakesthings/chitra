@@ -23,6 +23,7 @@ export const ConfigSchema = z
     message: 'budgets must include a "default" entry',
     path: ['budgets', 'default'],
   })
+  // Referential integrity: every account.budget must reference a known budget alias.
   .superRefine((cfg, ctx) => {
     for (const [alias, acct] of Object.entries(cfg.accounts)) {
       if (!(acct.budget in cfg.budgets)) {
