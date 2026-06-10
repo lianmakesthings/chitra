@@ -14,6 +14,6 @@ export function parseConfig(yamlOrNull: string | null): Config | null {
 /**
  * Serialize a Config back into the YAML representation stored on disk / in KV.
  */
-export function serializeConfig(_config: Config): string {
-  throw new Error('serializeConfig not implemented');
+export function serializeConfig(config: Config): string {
+  return YAML.stringify(ConfigSchema.parse(config));
 }

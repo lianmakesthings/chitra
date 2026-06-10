@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseConfig, serializeConfig } from '../src/config/parse.js';
 import { ZodError } from 'zod';
+import type { Config } from '../src/config/schema.js';
 
 describe('Config parser', () => {
   it('returns null for null input', () => {
@@ -388,12 +389,85 @@ describe('Config parser', () => {
   });
 });
 
-describe('serializeConfig', () => {
+describe('Config serializer', () => {
   it('is defined', () => {
     expect(typeof serializeConfig).toBe('function');
   });
 
-  it.todo('round-trips a minimal config: parseConfig(serializeConfig(x)) deep-equals x');
-  it.todo('round-trips a full config with multiple budgets, accounts, and flags');
-  it.todo('preserves field order in a way that survives a parse/serialize cycle');
+  it('round-trips a minimal config: parseConfig(serializeConfig(x)) deep-equals x', () => {
+    const minimalConfig: Config = {
+      budgets: { default: '00000000-0000-4000-8000-000000000000' },
+      accounts: {},
+      flags: {},
+    };
+
+    const config = parseConfig(serializeConfig(minimalConfig));
+    expect(config).toEqual(minimalConfig);
+  });
+
+  it('round-trips a full config with multiple budgets, accounts, and flags', () => {
+    const fullConfig: Config = {
+      budgets: {
+        default: '00000000-0000-4000-8000-000000000001',
+        business: '00000000-0000-4000-8000-000000000002',
+      },
+      accounts: {
+        checking: { budget: 'default', ynab_name: 'Checking' },
+        savings: { budget: 'default', ynab_name: 'Savings' },
+        business_checking: { budget: 'business', ynab_name: 'Checking' },
+      },
+      flags: {
+        shared: { color: 'red', name: 'Shared' },
+        reimbursable: { color: 'orange', name: 'Reimbursable' },
+      },
+    };
+
+    const config = parseConfig(serializeConfig(fullConfig));
+    expect(config).toEqual(fullConfig);
+  });
+
+  it('preserves field order in a way that survives a parse/serialize cycle', () => {
+    const orderedConfig: Config = {
+      budgets: {
+        default: '00000000-0000-4000-8000-000000000001',
+        business: '00000000-0000-4000-8000-000000000002',
+      },
+      accounts: {
+        checking: { budget: 'default', ynab_name: 'Checking' },
+        savings: { budget: 'default', ynab_name: 'Savings' },
+        business_checking: { budget: 'business', ynab_name: 'Checking' },
+      },
+      flags: {
+        shared: { color: 'red', name: 'Shared' },
+        reimbursable: { color: 'orange', name: 'Reimbursable' },
+      },
+    };
+
+    const round = parseConfig(serializeConfig(orderedConfig))!;
+    expect(Object.keys(round.budgets)).toEqual(['default', 'business']);
+    expect(Object.keys(round.accounts)).toEqual(['checking', 'savings', 'business_checking']);
+    expect(Object.keys(round.flags)).toEqual(['shared', 'reimbursable']);
+  });
+
+  describe('rejects invalid configs', () => {
+    it('without a default budget', () => {
+      const noDefault: Config = {
+        budgets: { business: '00000000-0000-4000-8000-000000000001' },
+        accounts: {},
+        flags: {},
+      };
+      expect(() => serializeConfig(noDefault)).toThrow(ZodError);
+    });
+
+    it('when account.budget references an unknown budget alias', () => {
+      const badRef: Config = {
+        budgets: { default: '00000000-0000-4000-8000-000000000001' },
+        accounts: {
+          checking: { budget: 'nonexistent', ynab_name: 'Checking' },
+        },
+        flags: {},
+      };
+      expect(() => serializeConfig(badRef)).toThrow(ZodError);
+    });
+  });
 });
