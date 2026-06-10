@@ -8,6 +8,14 @@ describe('Config parser', () => {
     expect(parseConfig(null)).toBeNull();
   });
 
+  it('rejects input that parses to a non-object', () => {
+    expect(() => parseConfig('hello')).toThrow(ZodError);
+  });
+
+  it('rejects empty string input', () => {
+    expect(() => parseConfig('')).toThrow(ZodError);
+  });
+
   describe('checking valid config', () => {
     it('parses a minimal valid config (default budget only)', () => {
       const budgetId = '00000000-0000-4000-8000-000000000000';
@@ -283,6 +291,33 @@ describe('Config parser', () => {
       }
     });
 
+    it('rejects empty account ynab_name', () => {
+      const yaml = [
+        'budgets:',
+        '  default: 00000000-0000-4000-8000-000000000001',
+        'accounts:',
+        '  checking:',
+        '    budget: default',
+        '    ynab_name: ""',
+        'flags: {}',
+        '',
+      ].join('\n');
+
+      expect(() => parseConfig(yaml)).toThrow(ZodError);
+      try {
+        parseConfig(yaml);
+      } catch (err) {
+        expect((err as ZodError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'too_small',
+              path: ['accounts', 'checking', 'ynab_name'],
+            }),
+          ]),
+        );
+      }
+    });
+
     it('rejects unknown flag colors', () => {
       const yamlBadColor = [
         'budgets:',
@@ -424,6 +459,17 @@ describe('Config serializer', () => {
 
     const config = parseConfig(serializeConfig(fullConfig));
     expect(config).toEqual(fullConfig);
+  });
+
+  it('round-trips special characters in ynab_name', () => {
+    const config: Config = {
+      budgets: { default: '00000000-0000-4000-8000-000000000001' },
+      accounts: {
+        checking: { budget: 'default', ynab_name: 'Joint: Café & 日本語' },
+      },
+      flags: {},
+    };
+    expect(parseConfig(serializeConfig(config))).toEqual(config);
   });
 
   it('preserves field order in a way that survives a parse/serialize cycle', () => {
